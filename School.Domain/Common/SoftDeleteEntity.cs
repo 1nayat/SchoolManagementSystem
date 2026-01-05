@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace School.Domain.Common;
 
-public abstract class SoftDeleteEntity : TenantEntity
+public abstract class SoftDeleteEntity : BaseEntity
 {
     public bool IsDeleted { get; set; } = false;
 }

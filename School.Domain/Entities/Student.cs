@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using School.Domain.Common;
+﻿using School.Domain.Common;
 
-namespace School.Domain.Entities
+namespace School.Domain.Entities;
+
+public class Student : SoftDeleteEntity
 {
-    public class Student : SoftDeleteEntity
-    {
-        public string AdmissionNumber { get; set; }
-        public DateTime DateOfBirth { get; set; }
-        public string Gender { get; set; }
+    // 🔑 Multi-tenancy
+    public Guid SchoolId { get; set; }
+    public School School { get; set; } = null!;
 
-        public ICollection<StudentGuardian> Guardians { get; set; }
-    }
+    public string AdmissionNumber { get; set; } = null!;
+    public DateTime DateOfBirth { get; set; }
+    public string Gender { get; set; } = null!;
+
+    public ICollection<StudentGuardian> Guardians { get; set; } = new List<StudentGuardian>();
 }

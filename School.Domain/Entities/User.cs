@@ -7,7 +7,7 @@ using School.Domain.Common;
 
 namespace School.Domain.Entities;
 
-public class User : BaseEntity
+public class User : SoftDeleteEntity
 {
     // NULL = SuperAdmin
     // NOT NULL = School user

@@ -12,7 +12,6 @@ public class AppDbContext : DbContext
     {
     }
 
-    // DbSets
     public DbSet<School.Domain.Entities.School> Schools => Set<School.Domain.Entities.School>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Guardian> Guardians => Set<Guardian>();
