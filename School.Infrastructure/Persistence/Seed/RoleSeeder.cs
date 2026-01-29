@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using School.Domain.Entities;
 using School.Infrastructure.Persistence;
 

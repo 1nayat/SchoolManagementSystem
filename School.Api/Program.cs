@@ -10,14 +10,9 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==============================
-// Controllers
-// ==============================
 builder.Services.AddControllers();
 
-// ==============================
-// Swagger + JWT Authorize Button
-// ==============================
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -53,14 +48,10 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// ==============================
-// HttpContext
-// ==============================
+
 builder.Services.AddHttpContextAccessor();
 
-// ==============================
-// Database
-// ==============================
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -68,9 +59,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-// ==============================
-// JWT CONFIGURATION (THIS WAS MISSING)
-// ==============================
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection("Jwt"));
 
@@ -96,20 +84,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// ==============================
-// Seeders
-// ==============================
+
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<IdentitySeeder>();
 
-// ==============================
-// Build
-// ==============================
+
 var app = builder.Build();
 
-// ==============================
-// Pipeline
-// ==============================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -118,15 +100,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// ⚠️ ORDER MATTERS
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// ==============================
-// Runtime Seeding
-// ==============================
+
 using (var scope = app.Services.CreateScope())
 {
     var roleSeeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
