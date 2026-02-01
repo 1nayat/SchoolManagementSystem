@@ -7,7 +7,7 @@ using School.Domain.Common;
 
 namespace School.Domain.Entities;
 
-public class Exam : SoftDeleteEntity
+public class Exam : TenantEntity
 {
     public string ExamName { get; set; }
     public string ExamType { get; set; } 

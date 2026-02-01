@@ -7,11 +7,12 @@ using School.Domain.Common;
 
 namespace School.Domain.Entities;
 
-public class Book : SoftDeleteEntity
+public class Book : TenantEntity
 {
     public string Title { get; set; }
     public string Author { get; set; }
     public string ISBN { get; set; }
     public int Quantity { get; set; }
 }
+
 

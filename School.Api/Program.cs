@@ -6,6 +6,7 @@ using School.Application.Common.Auth;
 using School.Infrastructure.Auth;
 using School.Infrastructure.Persistence;
 using School.Infrastructure.Persistence.Seed;
+using School.Infrastructure.Security;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);

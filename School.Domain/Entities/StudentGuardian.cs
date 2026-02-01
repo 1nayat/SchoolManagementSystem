@@ -7,7 +7,7 @@ using School.Domain.Common;
 
 namespace School.Domain.Entities;
 
-public class StudentGuardian : SoftDeleteEntity
+public class StudentGuardian : TenantEntity
 {
     public Guid StudentId { get; set; }
     public Guid GuardianId { get; set; }

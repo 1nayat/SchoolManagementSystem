@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using School.Application.Common.Auth;
 using School.Domain.Common;
 using School.Domain.Entities;
 
@@ -7,10 +8,17 @@ namespace School.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options)
+    private readonly ICurrentUser _currentUser;
+
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options,
+        ICurrentUser currentUser)
         : base(options)
     {
+        _currentUser = currentUser;
     }
+
+    // -------------------- DB SETS --------------------
 
     public DbSet<School.Domain.Entities.School> Schools => Set<School.Domain.Entities.School>();
     public DbSet<Student> Students => Set<Student>();
@@ -33,6 +41,8 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
 
+    // -------------------- MODEL CONFIG --------------------
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -40,7 +50,10 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
         ApplySoftDeleteQueryFilter(modelBuilder);
+        ApplyTenantQueryFilter(modelBuilder);
     }
+
+    // -------------------- SOFT DELETE FILTER --------------------
 
     private static void ApplySoftDeleteQueryFilter(ModelBuilder modelBuilder)
     {
@@ -49,7 +62,6 @@ public class AppDbContext : DbContext
             if (!typeof(SoftDeleteEntity).IsAssignableFrom(entityType.ClrType))
                 continue;
 
-          
             var parameter = Expression.Parameter(entityType.ClrType, "e");
 
             var propertyMethod = typeof(EF)
@@ -73,4 +85,60 @@ public class AppDbContext : DbContext
                         .HasQueryFilter(lambda);
         }
     }
+
+    // -------------------- TENANT (SCHOOL) FILTER --------------------
+
+    private void ApplyTenantQueryFilter(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!typeof(TenantEntity).IsAssignableFrom(entityType.ClrType))
+                continue;
+
+            var parameter = Expression.Parameter(entityType.ClrType, "e");
+
+            // e.SchoolId
+            var schoolIdProperty = Expression.Property(
+                parameter,
+                nameof(TenantEntity.SchoolId)
+            );
+
+            // _currentUser.IsSuperAdmin
+            var isSuperAdmin = Expression.Constant(_currentUser.IsSuperAdmin);
+
+            Expression tenantExpression;
+
+            // If SchoolId is null → only SuperAdmin can pass
+            if (_currentUser.SchoolId == null)
+            {
+                tenantExpression = isSuperAdmin;
+            }
+            else
+            {
+                // e.SchoolId == currentUser.SchoolId (GUID vs GUID)
+                var currentSchoolId = Expression.Constant(
+                    _currentUser.SchoolId.Value,
+                    typeof(Guid)
+                );
+
+                var schoolMatch = Expression.Equal(
+                    schoolIdProperty,
+                    currentSchoolId
+                );
+
+                // IsSuperAdmin || SchoolMatch
+                tenantExpression = Expression.OrElse(
+                    isSuperAdmin,
+                    schoolMatch
+                );
+            }
+
+            var lambda = Expression.Lambda(tenantExpression, parameter);
+
+            modelBuilder.Entity(entityType.ClrType)
+                        .HasQueryFilter(lambda);
+        }
+    }
+
 }
+

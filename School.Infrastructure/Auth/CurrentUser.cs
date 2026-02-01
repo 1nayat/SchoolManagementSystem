@@ -6,33 +6,72 @@ namespace School.Infrastructure.Auth;
 
 public class CurrentUser : ICurrentUser
 {
-    public Guid UserId { get; }
-    public Guid? SchoolId { get; }
-    public bool IsSuperAdmin { get; }
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public CurrentUser(IHttpContextAccessor httpContextAccessor)
     {
-        var user = httpContextAccessor.HttpContext?.User;
+        _httpContextAccessor = httpContextAccessor;
+    }
 
-        if (user == null || !user.Identity!.IsAuthenticated)
-            throw new UnauthorizedAccessException("User is not authenticated");
+    private ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
 
-        // UserId (from JWT)
-        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)
-                          ?? throw new UnauthorizedAccessException("UserId claim missing");
+    private bool HasHttpContext => _httpContextAccessor.HttpContext != null;
 
-        UserId = Guid.Parse(userIdClaim.Value);
+    private bool IsAuthenticated =>
+        User?.Identity?.IsAuthenticated == true;
 
-        // Role
-        IsSuperAdmin = user.IsInRole("SuperAdmin");
-
-        // SchoolId (only for non-superadmin)
-        if (!IsSuperAdmin)
+    public Guid UserId
+    {
+        get
         {
-            var schoolIdClaim = user.FindFirst("schoolId")
-                ?? throw new UnauthorizedAccessException("SchoolId claim missing");
+            if (!HasHttpContext)
+                throw new InvalidOperationException("UserId accessed outside HTTP request");
 
-            SchoolId = Guid.Parse(schoolIdClaim.Value);
+            if (!IsAuthenticated)
+                throw new UnauthorizedAccessException("User is not authenticated");
+
+            var claim = User!.FindFirst(ClaimTypes.NameIdentifier)
+                        ?? throw new UnauthorizedAccessException("UserId claim missing");
+
+            return Guid.Parse(claim.Value);
+        }
+    }
+
+    public Guid? SchoolId
+    {
+        get
+        {
+            // No HTTP context → system execution (startup, migrations)
+            if (!HasHttpContext)
+                return null;
+
+            // Not authenticated → no tenant
+            if (!IsAuthenticated)
+                return null;
+
+            // SuperAdmin → no tenant
+            if (IsSuperAdmin)
+                return null;
+
+            var claim = User!.FindFirst("SchoolId")
+                        ?? throw new UnauthorizedAccessException("SchoolId claim missing");
+
+            return Guid.Parse(claim.Value);
+        }
+    }
+
+    public bool IsSuperAdmin
+    {
+        get
+        {
+            // No HTTP context → system context (treat as SuperAdmin)
+            if (!HasHttpContext)
+                return true;
+
+            if (!IsAuthenticated)
+                return false;
+
+            return User!.IsInRole("SuperAdmin");
         }
     }
 }

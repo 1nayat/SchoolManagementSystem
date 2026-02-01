@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace School.Domain.Common
 {
-    public abstract class TenantEntity : BaseEntity
+    public abstract class TenantEntity : SoftDeleteEntity
     {
         public Guid SchoolId { get; set; }
     }

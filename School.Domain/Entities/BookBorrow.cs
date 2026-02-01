@@ -7,7 +7,7 @@ using School.Domain.Common;
 
 namespace School.Domain.Entities;
 
-public class BookBorrow  : SoftDeleteEntity
+public class BookBorrow  : TenantEntity
 {
     public Guid BookId { get; set; }
     public Guid StudentId { get; set; }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using School.Domain.Common;
 namespace School.Domain.Entities;
 
-public class ClassSubjectTeacher : SoftDeleteEntity
+public class ClassSubjectTeacher : TenantEntity
 {
     public Guid ClassId { get; set; }
     public Guid SectionId { get; set; }

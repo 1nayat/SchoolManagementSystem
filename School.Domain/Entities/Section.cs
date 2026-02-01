@@ -7,7 +7,7 @@ using School.Domain.Common;
 
 namespace School.Domain.Entities;
 
-public class Section : SoftDeleteEntity
+public class Section : TenantEntity
 {
     public string SectionName { get; set; } 
     public Guid ClassId { get; set; }

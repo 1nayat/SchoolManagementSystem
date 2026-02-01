@@ -2,7 +2,7 @@
 
 namespace School.Domain.Entities;
 
-public class Student : SoftDeleteEntity
+public class Student : TenantEntity
 {
     // 🔑 Multi-tenancy
     public Guid SchoolId { get; set; }

@@ -7,7 +7,7 @@ using School.Domain.Common;
 
 namespace School.Domain.Entities;
 
-public class Enrollment : SoftDeleteEntity
+public class Enrollment : TenantEntity
 {
     public Guid StudentId { get; set; }
     public Guid ClassId { get; set; }
