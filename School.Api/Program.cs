@@ -84,6 +84,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<SchoolSeeder>();
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<IdentitySeeder>();
+
+builder.Services.AddScoped<RoleSeeder>();
+builder.Services.AddScoped<IdentitySeeder>();
+
+builder.Services.AddScoped<SchoolSeeder>();
+builder.Services.AddScoped<RoleSeeder>();
+
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 var app = builder.Build();
