@@ -64,29 +64,25 @@ public class AppDbContext : DbContext
 
             var parameter = Expression.Parameter(entityType.ClrType, "e");
 
-            var propertyMethod = typeof(EF)
-                .GetMethod(nameof(EF.Property), new[] { typeof(object), typeof(string) })!
-                .MakeGenericMethod(typeof(bool));
-
             var isDeletedProperty = Expression.Call(
-                propertyMethod,
+                typeof(EF),
+                nameof(EF.Property),
+                new[] { typeof(bool) },
                 parameter,
                 Expression.Constant(nameof(SoftDeleteEntity.IsDeleted))
             );
 
-            var compareExpression = Expression.Equal(
-                isDeletedProperty,
-                Expression.Constant(false)
+            var filter = Expression.Lambda(
+                Expression.Equal(isDeletedProperty, Expression.Constant(false)),
+                parameter
             );
 
-            var lambda = Expression.Lambda(compareExpression, parameter);
-
             modelBuilder.Entity(entityType.ClrType)
-                        .HasQueryFilter(lambda);
+                        .HasQueryFilter(filter);
         }
     }
 
-    // -------------------- TENANT (SCHOOL) FILTER --------------------
+    // -------------------- TENANT READ FILTER --------------------
 
     private void ApplyTenantQueryFilter(ModelBuilder modelBuilder)
     {
@@ -97,25 +93,22 @@ public class AppDbContext : DbContext
 
             var parameter = Expression.Parameter(entityType.ClrType, "e");
 
-            // e.SchoolId
             var schoolIdProperty = Expression.Property(
                 parameter,
                 nameof(TenantEntity.SchoolId)
             );
 
-            // _currentUser.IsSuperAdmin
             var isSuperAdmin = Expression.Constant(_currentUser.IsSuperAdmin);
 
-            Expression tenantExpression;
+            Expression finalExpression;
 
-            // If SchoolId is null → only SuperAdmin can pass
             if (_currentUser.SchoolId == null)
             {
-                tenantExpression = isSuperAdmin;
+                // System / SuperAdmin context
+                finalExpression = isSuperAdmin;
             }
             else
             {
-                // e.SchoolId == currentUser.SchoolId (GUID vs GUID)
                 var currentSchoolId = Expression.Constant(
                     _currentUser.SchoolId.Value,
                     typeof(Guid)
@@ -126,19 +119,64 @@ public class AppDbContext : DbContext
                     currentSchoolId
                 );
 
-                // IsSuperAdmin || SchoolMatch
-                tenantExpression = Expression.OrElse(
+                finalExpression = Expression.OrElse(
                     isSuperAdmin,
                     schoolMatch
                 );
             }
 
-            var lambda = Expression.Lambda(tenantExpression, parameter);
+            var lambda = Expression.Lambda(finalExpression, parameter);
 
             modelBuilder.Entity(entityType.ClrType)
                         .HasQueryFilter(lambda);
         }
     }
 
-}
+    // -------------------- TENANT WRITE ENFORCEMENT --------------------
 
+    public override int SaveChanges()
+    {
+        ApplyTenantRules();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyTenantRules();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void ApplyTenantRules()
+    {
+        // SuperAdmin or system execution → unrestricted
+        if (_currentUser.IsSuperAdmin)
+            return;
+
+        var schoolId = _currentUser.SchoolId
+            ?? throw new UnauthorizedAccessException("Tenant context missing");
+
+        foreach (var entry in ChangeTracker.Entries<TenantEntity>())
+        {
+            if (entry.State == EntityState.Added)
+            {
+                // 🔒 Always force SchoolId on INSERT
+                entry.Entity.SchoolId = schoolId;
+            }
+
+            if (entry.State == EntityState.Modified)
+            {
+                var originalSchoolId =
+                    (Guid)entry.OriginalValues[nameof(TenantEntity.SchoolId)]!;
+
+                if (originalSchoolId != schoolId)
+                {
+                    throw new UnauthorizedAccessException(
+                        "Cross-tenant update detected");
+                }
+
+                // Prevent SchoolId modification
+                entry.Property(e => e.SchoolId).IsModified = false;
+            }
+        }
+    }
+}
