@@ -12,7 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -48,9 +47,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-
 builder.Services.AddHttpContextAccessor();
-
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
@@ -84,13 +81,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-
+builder.Services.AddScoped<SchoolSeeder>();
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<IdentitySeeder>();
-
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 var app = builder.Build();
-
 
 if (app.Environment.IsDevelopment())
 {
@@ -105,14 +101,15 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-
 using (var scope = app.Services.CreateScope())
 {
+    var schoolSeeder = scope.ServiceProvider.GetRequiredService<SchoolSeeder>();
     var roleSeeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
-    await roleSeeder.SeedRolesAsync();
-
     var identitySeeder = scope.ServiceProvider.GetRequiredService<IdentitySeeder>();
-    await identitySeeder.SeedSuperAdminAsync();
+
+    await schoolSeeder.SeedAsync();
+    await roleSeeder.SeedRolesAsync();
+    await identitySeeder.SeedAsync();
 }
 
 app.Run();

@@ -26,9 +26,16 @@ public class JwtTokenService : ITokenService
             new Claim(ClaimTypes.Email, user.Email)
         };
 
+        // 🔑 Roles
         foreach (var role in roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+
+        // 🏫 SchoolId (ONLY for non-superadmin users)
+        if (user.SchoolId.HasValue)
+        {
+            claims.Add(new Claim("schoolId", user.SchoolId.Value.ToString()));
         }
 
         var key = new SymmetricSecurityKey(

@@ -20,6 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\School.Application\School.Application.csproj" />
     <ProjectReference Include="..\School.Domain\School.Domain.csproj" />
+	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+
   </ItemGroup>
 
 </Project>
