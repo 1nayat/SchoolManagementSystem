@@ -12,7 +12,6 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        // Build configuration (read appsettings.json)
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false)
@@ -23,7 +22,6 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
             configuration.GetConnectionString("DefaultConnection")
         );
 
-        // 👇 Fake current user for design-time
         var designTimeUser = new DesignTimeCurrentUser();
 
         return new AppDbContext(optionsBuilder.Options, designTimeUser);

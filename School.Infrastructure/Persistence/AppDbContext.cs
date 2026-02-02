@@ -53,7 +53,6 @@ public class AppDbContext : DbContext
         ApplyTenantQueryFilter(modelBuilder);
     }
 
-    // -------------------- SOFT DELETE FILTER --------------------
 
     private static void ApplySoftDeleteQueryFilter(ModelBuilder modelBuilder)
     {
@@ -82,7 +81,6 @@ public class AppDbContext : DbContext
         }
     }
 
-    // -------------------- TENANT READ FILTER --------------------
 
     private void ApplyTenantQueryFilter(ModelBuilder modelBuilder)
     {
@@ -104,7 +102,6 @@ public class AppDbContext : DbContext
 
             if (_currentUser.SchoolId == null)
             {
-                // System / SuperAdmin context
                 finalExpression = isSuperAdmin;
             }
             else
@@ -132,7 +129,6 @@ public class AppDbContext : DbContext
         }
     }
 
-    // -------------------- TENANT WRITE ENFORCEMENT --------------------
 
     public override int SaveChanges()
     {
@@ -148,7 +144,6 @@ public class AppDbContext : DbContext
 
     private void ApplyTenantRules()
     {
-        // SuperAdmin or system execution → unrestricted
         if (_currentUser.IsSuperAdmin)
             return;
 
@@ -159,7 +154,6 @@ public class AppDbContext : DbContext
         {
             if (entry.State == EntityState.Added)
             {
-                // 🔒 Always force SchoolId on INSERT
                 entry.Entity.SchoolId = schoolId;
             }
 
@@ -174,7 +168,6 @@ public class AppDbContext : DbContext
                         "Cross-tenant update detected");
                 }
 
-                // Prevent SchoolId modification
                 entry.Property(e => e.SchoolId).IsModified = false;
             }
         }

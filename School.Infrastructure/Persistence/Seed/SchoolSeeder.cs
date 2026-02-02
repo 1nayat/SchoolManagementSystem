@@ -15,7 +15,6 @@ public class SchoolSeeder
 
     public async Task SeedAsync()
     {
-        // Idempotent
         if (await _context.Schools.AnyAsync())
             return;
 

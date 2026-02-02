@@ -41,15 +41,12 @@ public class CurrentUser : ICurrentUser
     {
         get
         {
-            // No HTTP context → system execution (startup, migrations)
             if (!HasHttpContext)
                 return null;
 
-            // Not authenticated → no tenant
             if (!IsAuthenticated)
                 return null;
 
-            // SuperAdmin → no tenant
             if (IsSuperAdmin)
                 return null;
 
@@ -64,7 +61,6 @@ public class CurrentUser : ICurrentUser
     {
         get
         {
-            // No HTTP context → system context (treat as SuperAdmin)
             if (!HasHttpContext)
                 return true;
 
