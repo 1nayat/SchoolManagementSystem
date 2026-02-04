@@ -78,14 +78,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = jwt["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwt["Key"]!)
-            )
+            ),
+
+            // 🔑 CRITICAL: map claims correctly
+            NameClaimType = CustomClaims.UserId,
+            RoleClaimType = CustomClaims.Role
         };
     });
+
 
 builder.Services.AddScoped<SchoolSeeder>();
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<IdentitySeeder>();
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<ICurrentUser>(sp =>
+{
+    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+
+    return httpContextAccessor.HttpContext != null
+        ? sp.GetRequiredService<CurrentUser>()
+        : new SystemCurrentUser();
+});
+
+builder.Services.AddScoped<CurrentUser>();
 
 
 var app = builder.Build();

@@ -10,6 +10,6 @@ namespace School.Application.Common.Auth;
 
 public interface ITokenService
 {
-    string GenerateToken(User user, IEnumerable<string> roles);
+    string GenerateToken(User user);
 }
 

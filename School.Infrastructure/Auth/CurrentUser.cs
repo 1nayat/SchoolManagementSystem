@@ -13,61 +13,25 @@ public class CurrentUser : ICurrentUser
         _httpContextAccessor = httpContextAccessor;
     }
 
-    private ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
+    private ClaimsPrincipal User =>
+        _httpContextAccessor.HttpContext?.User
+        ?? throw new UnauthorizedAccessException("No HTTP context");
 
-    private bool HasHttpContext => _httpContextAccessor.HttpContext != null;
-
-    private bool IsAuthenticated =>
-        User?.Identity?.IsAuthenticated == true;
-
-    public Guid UserId
-    {
-        get
-        {
-            if (!HasHttpContext)
-                throw new InvalidOperationException("UserId accessed outside HTTP request");
-
-            if (!IsAuthenticated)
-                throw new UnauthorizedAccessException("User is not authenticated");
-
-            var claim = User!.FindFirst(ClaimTypes.NameIdentifier)
-                        ?? throw new UnauthorizedAccessException("UserId claim missing");
-
-            return Guid.Parse(claim.Value);
-        }
-    }
+    public Guid UserId =>
+        Guid.Parse(
+            User.FindFirstValue(CustomClaims.UserId)
+            ?? throw new UnauthorizedAccessException("UserId claim missing")
+        );
 
     public Guid? SchoolId
     {
         get
         {
-            if (!HasHttpContext)
-                return null;
-
-            if (!IsAuthenticated)
-                return null;
-
-            if (IsSuperAdmin)
-                return null;
-
-            var claim = User!.FindFirst("SchoolId")
-                        ?? throw new UnauthorizedAccessException("SchoolId claim missing");
-
-            return Guid.Parse(claim.Value);
+            var value = User.FindFirstValue(CustomClaims.SchoolId);
+            return value == null ? null : Guid.Parse(value);
         }
     }
 
-    public bool IsSuperAdmin
-    {
-        get
-        {
-            if (!HasHttpContext)
-                return true;
-
-            if (!IsAuthenticated)
-                return false;
-
-            return User!.IsInRole("SuperAdmin");
-        }
-    }
+    public bool IsSuperAdmin =>
+        User.IsInRole(Roles.SuperAdmin);
 }

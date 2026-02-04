@@ -141,16 +141,24 @@ public class AppDbContext : DbContext
         ApplyTenantRules();
         return base.SaveChangesAsync(cancellationToken);
     }
-
     private void ApplyTenantRules()
     {
+        // 🔑 Only apply tenant rules if there are TenantEntities involved
+        var tenantEntries = ChangeTracker
+            .Entries<TenantEntity>()
+            .ToList();
+
+        if (!tenantEntries.Any())
+            return;
+
+        // SuperAdmin bypass
         if (_currentUser.IsSuperAdmin)
             return;
 
         var schoolId = _currentUser.SchoolId
             ?? throw new UnauthorizedAccessException("Tenant context missing");
 
-        foreach (var entry in ChangeTracker.Entries<TenantEntity>())
+        foreach (var entry in tenantEntries)
         {
             if (entry.State == EntityState.Added)
             {
@@ -172,4 +180,5 @@ public class AppDbContext : DbContext
             }
         }
     }
+
 }
