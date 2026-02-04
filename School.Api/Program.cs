@@ -1,8 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using School.Application.Common.Auth;
+using School.Application.Common.Email;
+using School.Application.Invites.Interfaces;
+using School.Application.Teachers.Interfaces;
+using School.Domain.Entities;
 using School.Infrastructure.Auth;
 using School.Infrastructure.Persistence;
 using School.Infrastructure.Persistence.Seed;
@@ -127,6 +132,11 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddScoped<SchoolSeeder>();
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<IdentitySeeder>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<ITeacherInviteService, TeacherInviteService>();
+builder.Services.AddScoped<ITeacherService, TeacherService>();
+builder.Services.AddScoped<IInviteAcceptanceService, InviteAcceptanceService>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 
 var app = builder.Build();
