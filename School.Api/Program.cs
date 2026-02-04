@@ -11,9 +11,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
 
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -48,7 +50,9 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+
 builder.Services.AddHttpContextAccessor();
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
@@ -57,10 +61,23 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection("Jwt"));
 
+
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+builder.Services.AddScoped<CurrentUser>();
+builder.Services.AddScoped<ICurrentUser>(sp =>
+{
+    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+
+    return httpContextAccessor.HttpContext != null
+        ? sp.GetRequiredService<CurrentUser>()
+        : new SystemCurrentUser();
+});
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -80,29 +97,40 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(jwt["Key"]!)
             ),
 
-            // 🔑 CRITICAL: map claims correctly
             NameClaimType = CustomClaims.UserId,
             RoleClaimType = CustomClaims.Role
         };
     });
 
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(Policies.RequireSuperAdmin, policy =>
+        policy.RequireRole(Roles.SuperAdmin));
+
+    options.AddPolicy(Policies.RequireSchoolAdmin, policy =>
+        policy.RequireRole(Roles.SchoolAdmin));
+
+    options.AddPolicy(Policies.RequireOnboardedSchoolAdmin, policy =>
+        policy.RequireAssertion(context =>
+        {
+            var isSchoolAdmin = context.User.IsInRole(Roles.SchoolAdmin);
+            var hasSchoolId = context.User.HasClaim(
+                c => c.Type == CustomClaims.SchoolId
+            );
+
+            return isSchoolAdmin && hasSchoolId;
+        }));
+});
+
+
 builder.Services.AddScoped<SchoolSeeder>();
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<IdentitySeeder>();
-builder.Services.AddScoped<ICurrentUser>(sp =>
-{
-    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
-
-    return httpContextAccessor.HttpContext != null
-        ? sp.GetRequiredService<CurrentUser>()
-        : new SystemCurrentUser();
-});
-
-builder.Services.AddScoped<CurrentUser>();
 
 
 var app = builder.Build();
+
 
 if (app.Environment.IsDevelopment())
 {
@@ -116,6 +144,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
 
 using (var scope = app.Services.CreateScope())
 {

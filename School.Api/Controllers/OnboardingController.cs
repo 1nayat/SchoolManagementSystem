@@ -25,6 +25,7 @@ public class OnboardingController : ControllerBase
         _currentUser = currentUser;
         _tokenService = tokenService;
     }
+    [Authorize(Policy = Policies.RequireSchoolAdmin)]
 
     [HttpPost("school")]
     public async Task<IActionResult> CreateSchool(

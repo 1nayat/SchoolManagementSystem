@@ -9,8 +9,7 @@ namespace School.Domain.Entities;
 
 public class User : SoftDeleteEntity
 {
-    // NULL = SuperAdmin
-    // NOT NULL = School user
+
     public Guid? SchoolId { get; set; }
     public School? School { get; set; }
 
