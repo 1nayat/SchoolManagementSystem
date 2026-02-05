@@ -10,17 +10,27 @@ public class StudentConfig : IEntityTypeConfiguration<Student>
     {
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.AdmissionNumber)
-               .IsRequired()
-               .HasMaxLength(50);
+        builder.HasOne(x => x.School)
+            .WithMany()
+            .HasForeignKey(x => x.SchoolId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.SchoolId, x.AdmissionNumber })
-               .IsUnique();
+        builder.HasOne(x => x.Class)
+            .WithMany()
+            .HasForeignKey(x => x.ClassId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasMany(x => x.Guardians)
-               .WithOne(x => x.Student)
-               .HasForeignKey(x => x.StudentId)
-               .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.Section)
+            .WithMany()
+            .HasForeignKey(x => x.SectionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => new
+        {
+            x.SchoolId,
+            x.ClassId,
+            x.SectionId
+        });
     }
 }
 

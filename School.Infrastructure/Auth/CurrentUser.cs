@@ -32,6 +32,28 @@ public class CurrentUser : ICurrentUser
         }
     }
 
-    public bool IsSuperAdmin =>
-        User.IsInRole(Roles.SuperAdmin);
+
+    public IReadOnlyCollection<string> Roles =>
+        User.FindAll(ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+
+    public Guid? TeacherId
+    {
+        get
+        {
+            var value = User.FindFirstValue(CustomClaims.TeacherId);
+            return value == null ? null : Guid.Parse(value);
+        }
+    }
+
+   
+    public Guid? StudentId
+    {
+        get
+        {
+            var value = User.FindFirstValue(CustomClaims.StudentId);
+            return value == null ? null : Guid.Parse(value);
+        }
+    }
 }

@@ -1,12 +1,17 @@
 ﻿using School.Application.Common.Auth;
 
-namespace School.Infrastructure.Security;
+namespace School.Infrastructure.Auth;
 
 public class DesignTimeCurrentUser : ICurrentUser
 {
     public Guid UserId => Guid.Empty;
+    public Guid? SchoolId => Guid.Empty;
 
-    public Guid? SchoolId => null;
+    public IReadOnlyCollection<string> Roles =>
+        new[] { Roles.IsSuperAdmin };
 
-    public bool IsSuperAdmin => true;
+    public Guid? TeacherId => null;
+    public Guid? StudentId => null;
+
+    public bool IsSuperAdmin => throw new NotImplementedException();
 }

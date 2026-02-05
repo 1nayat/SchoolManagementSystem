@@ -24,14 +24,12 @@ public class InviteAcceptanceService : IInviteAcceptanceService
     {
         var invite = await GetValidInvite(request.Token);
 
-        // Nothing else yet — frontend can now show password screen
     }
 
     public async Task SetPasswordAsync(SetPasswordRequest request)
     {
         var invite = await GetValidInvite(request.Token);
 
-        // 1️⃣ Create User
         var user = new User
         {
             Email = invite.Email,
@@ -45,7 +43,6 @@ public class InviteAcceptanceService : IInviteAcceptanceService
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        // 2️⃣ Assign Teacher role
         var role = await _db.Roles.FirstAsync(r => r.Name == invite.Role);
 
         _db.UserRoles.Add(new UserRole
@@ -54,18 +51,15 @@ public class InviteAcceptanceService : IInviteAcceptanceService
             RoleId = role.Id
         });
 
-        // 3️⃣ Link Teacher → User
         var teacher = await _db.Teachers.FindAsync(invite.TeacherId);
         teacher!.UserId = user.Id;
         teacher.IsProfileCompleted = true;
 
-        // 4️⃣ Mark invite as used
         invite.IsUsed = true;
 
         await _db.SaveChangesAsync();
     }
 
-    // 🔐 Shared validation logic
     private async Task<UserInvite> GetValidInvite(string rawToken)
     {
         var hashed = HashToken(rawToken);

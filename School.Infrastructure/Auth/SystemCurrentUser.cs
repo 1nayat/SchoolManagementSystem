@@ -5,8 +5,12 @@ namespace School.Infrastructure.Auth;
 public class SystemCurrentUser : ICurrentUser
 {
     public Guid UserId => Guid.Empty;
-
     public Guid? SchoolId => null;
 
-    public bool IsSuperAdmin => true;
+    public IReadOnlyCollection<string> Roles =>
+        new[] { Roles.SuperAdmin };
+
+    public Guid? TeacherId => null;
+    public Guid? StudentId => null;
+
 }
