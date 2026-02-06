@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using School.Application.Common.Auth;
 using School.Application.Common.Email;
 using School.Application.Invites;
@@ -46,17 +47,16 @@ public class TeacherInviteService : ITeacherInviteService
 
         _db.Teachers.Add(teacher);
 
-        var rawToken = Convert.ToBase64String(
-            RandomNumberGenerator.GetBytes(32));
-
-        var hashedToken = HashToken(rawToken);
+        var rawToken = WebEncoders.Base64UrlEncode(
+            RandomNumberGenerator.GetBytes(32)
+        );
 
         var invite = new UserInvite
         {
             SchoolId = schoolId,
             Email = request.Email,
             Role = "Teacher",
-            Token = hashedToken,
+            Token = rawToken,          
             ExpiresAt = DateTime.UtcNow.AddHours(48),
             IsUsed = false,
             TeacherId = teacher.Id,
@@ -64,7 +64,6 @@ public class TeacherInviteService : ITeacherInviteService
         };
 
         _db.UserInvites.Add(invite);
-
         await _db.SaveChangesAsync();
 
         var inviteLink =
@@ -79,9 +78,7 @@ public class TeacherInviteService : ITeacherInviteService
             body
         );
 
-        
-            return rawToken;
-
+        return rawToken; 
     }
 
     private static string HashToken(string token)

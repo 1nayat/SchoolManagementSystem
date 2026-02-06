@@ -8,9 +8,10 @@ public class SystemCurrentUser : ICurrentUser
     public Guid? SchoolId => null;
 
     public IReadOnlyCollection<string> Roles =>
-        new[] { Roles.SuperAdmin };
+        new[] { RolesConstants.SuperAdmin };
 
     public Guid? TeacherId => null;
     public Guid? StudentId => null;
 
+    public bool IsSuperAdmin => true;
 }

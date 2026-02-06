@@ -8,7 +8,7 @@ public class DesignTimeCurrentUser : ICurrentUser
     public Guid? SchoolId => Guid.Empty;
 
     public IReadOnlyCollection<string> Roles =>
-        new[] { Roles.IsSuperAdmin };
+       new[] { RolesConstants.SuperAdmin };
 
     public Guid? TeacherId => null;
     public Guid? StudentId => null;

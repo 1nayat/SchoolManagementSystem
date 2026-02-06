@@ -4,8 +4,6 @@ using School.Application.Invites.DTOs;
 using School.Application.Invites.Interfaces;
 using School.Domain.Entities;
 using School.Infrastructure.Persistence;
-using System.Security.Cryptography;
-using System.Text;
 
 public class InviteAcceptanceService : IInviteAcceptanceService
 {
@@ -22,8 +20,7 @@ public class InviteAcceptanceService : IInviteAcceptanceService
 
     public async Task AcceptAsync(AcceptInviteRequest request)
     {
-        var invite = await GetValidInvite(request.Token);
-
+        await GetValidInvite(request.Token);
     }
 
     public async Task SetPasswordAsync(SetPasswordRequest request)
@@ -43,7 +40,9 @@ public class InviteAcceptanceService : IInviteAcceptanceService
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        var role = await _db.Roles.FirstAsync(r => r.Name == invite.Role);
+        var role = await _db.Roles
+            .AsNoTracking()
+            .FirstAsync(r => r.Name == invite.Role);
 
         _db.UserRoles.Add(new UserRole
         {
@@ -52,7 +51,10 @@ public class InviteAcceptanceService : IInviteAcceptanceService
         });
 
         var teacher = await _db.Teachers.FindAsync(invite.TeacherId);
-        teacher!.UserId = user.Id;
+        if (teacher == null)
+            throw new InvalidOperationException("Teacher not found");
+
+        teacher.UserId = user.Id;
         teacher.IsProfileCompleted = true;
 
         invite.IsUsed = true;
@@ -62,10 +64,24 @@ public class InviteAcceptanceService : IInviteAcceptanceService
 
     private async Task<UserInvite> GetValidInvite(string rawToken)
     {
-        var hashed = HashToken(rawToken);
+        var token = rawToken?.Trim();
 
-        var invite = await _db.UserInvites
-            .FirstOrDefaultAsync(x => x.Token == hashed);
+        Console.WriteLine("=================================");
+        Console.WriteLine($"REQUEST TOKEN : '{token}'");
+        Console.WriteLine($"REQUEST LENGTH: {token?.Length}");
+        Console.WriteLine("=================================");
+
+        var invites = await _db.UserInvites.ToListAsync();
+
+        foreach (var i in invites)
+        {
+            Console.WriteLine($"DB TOKEN     : '{i.Token}'");
+            Console.WriteLine($"DB LENGTH    : {i.Token.Length}");
+            Console.WriteLine($"MATCH        : {i.Token == token}");
+            Console.WriteLine("---------------------------------");
+        }
+
+        var invite = invites.FirstOrDefault(i => i.Token == token);
 
         if (invite == null)
             throw new InvalidOperationException("Invalid invite");
@@ -77,12 +93,5 @@ public class InviteAcceptanceService : IInviteAcceptanceService
             throw new InvalidOperationException("Invite expired");
 
         return invite;
-    }
-
-    private static string HashToken(string token)
-    {
-        using var sha = SHA256.Create();
-        var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(token));
-        return Convert.ToBase64String(bytes);
     }
 }

@@ -1,8 +1,6 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using School.Application.Common.Auth;
-
-namespace School.Infrastructure.Auth;
+using System.Security.Claims;
 
 public class CurrentUser : ICurrentUser
 {
@@ -13,47 +11,53 @@ public class CurrentUser : ICurrentUser
         _httpContextAccessor = httpContextAccessor;
     }
 
-    private ClaimsPrincipal User =>
-        _httpContextAccessor.HttpContext?.User
-        ?? throw new UnauthorizedAccessException("No HTTP context");
+    private ClaimsPrincipal? User =>
+        _httpContextAccessor.HttpContext?.User;
 
-    public Guid UserId =>
-        Guid.Parse(
-            User.FindFirstValue(CustomClaims.UserId)
-            ?? throw new UnauthorizedAccessException("UserId claim missing")
-        );
+    public Guid UserId
+    {
+        get
+        {
+            var value = User?.FindFirstValue(CustomClaims.UserId);
+            return value == null ? Guid.Empty : Guid.Parse(value);
+        }
+    }
 
     public Guid? SchoolId
     {
         get
         {
-            var value = User.FindFirstValue(CustomClaims.SchoolId);
+            var value = User?.FindFirstValue(CustomClaims.SchoolId);
             return value == null ? null : Guid.Parse(value);
         }
     }
 
-
     public IReadOnlyCollection<string> Roles =>
-        User.FindAll(ClaimTypes.Role)
-            .Select(c => c.Value)
-            .ToList();
+      User?
+          .FindAll(ClaimTypes.Role)
+          .Select(c => c.Value)
+          .ToList()
+      ?? Enumerable.Empty<string>().ToList();
+
 
     public Guid? TeacherId
     {
         get
         {
-            var value = User.FindFirstValue(CustomClaims.TeacherId);
+            var value = User?.FindFirstValue(CustomClaims.TeacherId);
             return value == null ? null : Guid.Parse(value);
         }
     }
 
-   
     public Guid? StudentId
     {
         get
         {
-            var value = User.FindFirstValue(CustomClaims.StudentId);
+            var value = User?.FindFirstValue(CustomClaims.StudentId);
             return value == null ? null : Guid.Parse(value);
         }
     }
+
+    public bool IsSuperAdmin =>
+        Roles.Contains(RolesConstants.SuperAdmin);
 }

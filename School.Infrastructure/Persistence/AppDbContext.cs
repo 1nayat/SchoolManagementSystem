@@ -10,6 +10,11 @@ public class AppDbContext : DbContext
 {
     private readonly ICurrentUser _currentUser;
 
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options)
+    {
+    }
+
     public AppDbContext(
         DbContextOptions<AppDbContext> options,
         ICurrentUser currentUser)
@@ -39,8 +44,7 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
-    public DbSet<UserInvite> UserInvites { get; set; }
-
+    public DbSet<UserInvite> UserInvites => Set<UserInvite>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
 
     // -------------------- MODEL CONFIG --------------------
@@ -55,6 +59,7 @@ public class AppDbContext : DbContext
         ApplyTenantQueryFilter(modelBuilder);
     }
 
+    // -------------------- SOFT DELETE FILTER --------------------
 
     private static void ApplySoftDeleteQueryFilter(ModelBuilder modelBuilder)
     {
@@ -83,12 +88,17 @@ public class AppDbContext : DbContext
         }
     }
 
+    // -------------------- TENANT FILTER --------------------
 
     private void ApplyTenantQueryFilter(ModelBuilder modelBuilder)
     {
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (!typeof(TenantEntity).IsAssignableFrom(entityType.ClrType))
+                continue;
+
+            // 🚫 EXCLUDE INVITES FROM TENANT FILTERING
+            if (entityType.ClrType == typeof(UserInvite))
                 continue;
 
             var parameter = Expression.Parameter(entityType.ClrType, "e");
@@ -104,6 +114,7 @@ public class AppDbContext : DbContext
 
             if (_currentUser.SchoolId == null)
             {
+                // unauthenticated or missing tenant → only superadmin allowed
                 finalExpression = isSuperAdmin;
             }
             else
@@ -131,6 +142,7 @@ public class AppDbContext : DbContext
         }
     }
 
+    // -------------------- SAVE RULES --------------------
 
     public override int SaveChanges()
     {
@@ -143,9 +155,9 @@ public class AppDbContext : DbContext
         ApplyTenantRules();
         return base.SaveChangesAsync(cancellationToken);
     }
+
     private void ApplyTenantRules()
     {
-        // 🔑 Only apply tenant rules if there are TenantEntities involved
         var tenantEntries = ChangeTracker
             .Entries<TenantEntity>()
             .ToList();
@@ -182,5 +194,4 @@ public class AppDbContext : DbContext
             }
         }
     }
-
 }

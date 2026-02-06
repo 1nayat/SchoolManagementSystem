@@ -12,6 +12,7 @@ using School.Infrastructure.Auth;
 using School.Infrastructure.Persistence;
 using School.Infrastructure.Persistence.Seed;
 using School.Infrastructure.Security;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,14 +75,9 @@ builder.Services.Configure<JwtOptions>(
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
 builder.Services.AddScoped<CurrentUser>();
-builder.Services.AddScoped<ICurrentUser>(sp =>
-{
-    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+builder.Services.AddHttpContextAccessor();
 
-    return httpContextAccessor.HttpContext != null
-        ? sp.GetRequiredService<CurrentUser>()
-        : new SystemCurrentUser();
-});
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,7 +99,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ),
 
             NameClaimType = CustomClaims.UserId,
-            RoleClaimType = CustomClaims.Role
+            RoleClaimType = ClaimTypes.Role
         };
     });
 

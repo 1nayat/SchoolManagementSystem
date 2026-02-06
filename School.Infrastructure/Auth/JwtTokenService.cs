@@ -44,14 +44,14 @@ public class JwtTokenService : ITokenService
         }
 
         var claims = new List<Claim>
-    {
-        new Claim(CustomClaims.UserId, user.Id.ToString()),
-        new Claim(ClaimTypes.Email, user.Email)
-    };
+{
+    new Claim(CustomClaims.UserId, user.Id.ToString()),
+    new Claim(ClaimTypes.Email, user.Email)
+};
 
         foreach (var role in roleNames)
         {
-            claims.Add(new Claim(CustomClaims.Role, role));
+            claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
         if (user.SchoolId.HasValue)
@@ -61,6 +61,7 @@ public class JwtTokenService : ITokenService
                 user.SchoolId.Value.ToString()
             ));
         }
+
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_options.Key)
